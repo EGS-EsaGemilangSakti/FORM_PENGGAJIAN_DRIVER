@@ -1,7 +1,8 @@
 import type { UseFormSetValue, UseFormWatch } from 'react-hook-form';
 import { useBirthRegencies } from '../../hooks/useRegional';
 import type { PayrollFormValues } from '../../types/payroll';
-import { FieldShell, inputClass } from './FieldShell';
+import { FieldShell } from './FieldShell';
+import { SearchableSelect } from './SearchableSelect';
 
 export function BirthPlaceField({
   setValue,
@@ -17,24 +18,25 @@ export function BirthPlaceField({
 
   return (
     <FieldShell label="Tempat Lahir" error={error}>
-      <select
-        className={inputClass}
+      <SearchableSelect
         value={birthPlaceCode}
+        placeholder="Pilih kota/kabupaten lahir"
+        searchPlaceholder="Cari kota/kabupaten lahir"
+        loading={regencies.isLoading}
+        loadingText="Memuat kota/kabupaten"
         disabled={regencies.isLoading}
-        onChange={(event) => {
-          const selected = regencies.data?.find((item) => item.code === event.target.value);
+        options={(regencies.data ?? []).map((item) => ({
+          value: item.code,
+          label: `${item.name} - ${item.province}`,
+          searchText: `${item.name} ${item.province}`,
+        }))}
+        onChange={(selectedValue) => {
+          const selected = regencies.data?.find((item) => item.code === selectedValue);
           setValue('birthPlaceCode', selected?.code ?? '', { shouldValidate: true });
           setValue('birthPlace', selected?.name ?? '', { shouldValidate: true });
           setValue('birthPlaceProvince', selected?.province ?? '', { shouldValidate: true });
         }}
-      >
-        <option value="">{regencies.isLoading ? 'Memuat kota/kabupaten' : 'Pilih kota/kabupaten lahir'}</option>
-        {(regencies.data ?? []).map((item) => (
-          <option key={item.code} value={item.code}>
-            {item.name} - {item.province}
-          </option>
-        ))}
-      </select>
+      />
     </FieldShell>
   );
 }
