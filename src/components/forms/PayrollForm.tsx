@@ -435,7 +435,7 @@ export function PayrollForm() {
 
           {ownershipStatus === 'ORANG LAIN' ? (
             <StepCard title="Unggah Dokumen" icon={<CloudUpload className="h-5 w-5 text-[#f2ca50]" />}>
-              <PowerOfAttorneyUploadField register={register} required error={errors.powerOfAttorneyFile?.message} />
+              <PowerOfAttorneyUploadField register={register} watch={watch} required error={errors.powerOfAttorneyFile?.message} />
             </StepCard>
           ) : null}
         </div>
