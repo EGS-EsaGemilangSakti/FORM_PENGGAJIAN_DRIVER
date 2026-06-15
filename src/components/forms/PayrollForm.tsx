@@ -2,7 +2,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { ArrowLeft, ArrowRight, BarChart3, BriefcaseBusiness, Check, CloudUpload, Download, Info, Loader2, MapPin, Send, ShieldCheck, WalletCards } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, type FieldErrors } from 'react-hook-form';
 import toast from 'react-hot-toast';
 import { BANKS } from '../../constants/banks';
 import { PTKP_OPTIONS } from '../../constants/placements';
@@ -238,9 +238,49 @@ function SubmitLoadingOverlay() {
   );
 }
 
+function collectErrorMessages(errors: FieldErrors<PayrollFormValues>): string[] {
+  const messages = new Set<string>();
+
+  function visit(value: unknown) {
+    if (!value || typeof value !== 'object') return;
+    const maybeError = value as { message?: unknown };
+    if (typeof maybeError.message === 'string' && maybeError.message.trim()) {
+      messages.add(maybeError.message);
+    }
+    Object.values(value as Record<string, unknown>).forEach(visit);
+  }
+
+  visit(errors);
+  return Array.from(messages);
+}
+
+function ValidationErrorModal({ messages, onClose }: { messages: string[]; onClose: () => void }) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#0f0f0f]/80 px-5 backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="validation-error-title">
+      <div className="w-full max-w-md rounded-xl border border-[#f2ca50]/25 bg-[#201f1f] p-6 shadow-[0_32px_64px_-12px_rgba(0,0,0,0.55)]">
+        <h2 id="validation-error-title" className="text-xl font-semibold text-white">Data belum lengkap</h2>
+        <div className="mt-4 max-h-72 overflow-y-auto rounded-lg border border-white/10 bg-[#171616] p-4">
+          <ul className="space-y-2 text-sm leading-6 text-[#e5e2e1]">
+            {messages.map((message) => (
+              <li key={message} className="flex gap-2">
+                <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[#f2ca50]" />
+                <span>{message}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+        <button type="button" onClick={onClose} className="mt-5 inline-flex h-11 w-full items-center justify-center rounded-xl bg-[#f2ca50] px-5 text-sm font-bold text-[#3c2f00] transition hover:bg-[#ffd95c]">
+          Mengerti
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export function PayrollForm() {
   const persistedDraft = useMemo(loadPersistedDraft, []);
   const [currentStep, setCurrentStep] = useState<1 | 2 | 3>(persistedDraft.currentStep ?? 1);
+  const [validationMessages, setValidationMessages] = useState<string[]>([]);
   const submitLock = useRef(false);
   const skipDraftPersistRef = useRef(false);
   const validateMutation = useValidateBank();
@@ -300,9 +340,7 @@ export function PayrollForm() {
   const accountValidation = watch('accountValidation');
   const ownershipStatus = watch('ownershipStatus');
   const bankCode = watch('bankCode');
-  const dataAgreement = watch('dataAgreement');
   const summaryValues = watch();
-  const canSubmit = accountValidation.status === 'VALID' && dataAgreement && !isSubmitting && !submitMutation.isPending;
   const isSubmitLoading = isSubmitting || submitMutation.isPending;
 
   useEffect(() => {
@@ -446,9 +484,15 @@ export function PayrollForm() {
     }
   };
 
+  const onInvalidSubmit = (formErrors: FieldErrors<PayrollFormValues>) => {
+    const messages = collectErrorMessages(formErrors);
+    setValidationMessages(messages.length > 0 ? messages : ['Lengkapi semua data wajib sebelum mengirim data.']);
+  };
+
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-10 px-5 pb-28 pt-6 sm:px-8" noValidate>
+    <form onSubmit={handleSubmit(onSubmit, onInvalidSubmit)} className="space-y-10 px-5 pb-28 pt-6 sm:px-8" noValidate>
       {isSubmitLoading ? <SubmitLoadingOverlay /> : null}
+      {validationMessages.length > 0 ? <ValidationErrorModal messages={validationMessages} onClose={() => setValidationMessages([])} /> : null}
       <input type="text" className="hidden" tabIndex={-1} autoComplete="off" {...register('website')} />
 
       <section className="space-y-8 text-center">
@@ -576,7 +620,7 @@ export function PayrollForm() {
               <ArrowRight className="h-4 w-4" />
             </button>
           ) : (
-            <button type="submit" disabled={!canSubmit} className="inline-flex h-12 flex-1 items-center justify-center gap-2 rounded-xl bg-[#f2ca50] px-5 text-sm font-bold text-[#3c2f00] transition hover:bg-[#ffd95c] disabled:cursor-not-allowed disabled:bg-slate-500">
+            <button type="submit" disabled={isSubmitting || submitMutation.isPending} className="inline-flex h-12 flex-1 items-center justify-center gap-2 rounded-xl bg-[#f2ca50] px-5 text-sm font-bold text-[#3c2f00] transition hover:bg-[#ffd95c] disabled:cursor-not-allowed disabled:bg-slate-500">
               {isSubmitting || submitMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
               KIRIM DATA
             </button>
