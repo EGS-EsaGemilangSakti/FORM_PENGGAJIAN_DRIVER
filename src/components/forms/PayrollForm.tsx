@@ -240,14 +240,23 @@ function SubmitLoadingOverlay() {
 
 function collectErrorMessages(errors: FieldErrors<PayrollFormValues>): string[] {
   const messages = new Set<string>();
+  const visited = new WeakSet<object>();
 
   function visit(value: unknown) {
     if (!value || typeof value !== 'object') return;
+    if (value instanceof HTMLElement) return;
+    if (visited.has(value)) return;
+    visited.add(value);
+
     const maybeError = value as { message?: unknown };
     if (typeof maybeError.message === 'string' && maybeError.message.trim()) {
       messages.add(maybeError.message);
     }
-    Object.values(value as Record<string, unknown>).forEach(visit);
+
+    Object.entries(value as Record<string, unknown>).forEach(([key, child]) => {
+      if (key === 'ref') return;
+      visit(child);
+    });
   }
 
   visit(errors);
@@ -614,15 +623,15 @@ export function PayrollForm() {
             </button>
           ) : null}
 
-          {currentStep < 3 ? (
-            <button type="button" onClick={goToNextStep} className="inline-flex h-12 flex-1 items-center justify-center gap-3 rounded-xl bg-[#f2ca50] px-8 text-sm font-semibold tracking-[0.05em] text-[#3c2f00] transition hover:bg-[#ffd95c]">
-              Lanjut
-              <ArrowRight className="h-4 w-4" />
-            </button>
-          ) : (
+          {currentStep === 3 ? (
             <button type="submit" disabled={isSubmitting || submitMutation.isPending} className="inline-flex h-12 flex-1 items-center justify-center gap-2 rounded-xl bg-[#f2ca50] px-5 text-sm font-bold text-[#3c2f00] transition hover:bg-[#ffd95c] disabled:cursor-not-allowed disabled:bg-slate-500">
               {isSubmitting || submitMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
               KIRIM DATA
+            </button>
+          ) : (
+            <button type="button" onClick={goToNextStep} className="inline-flex h-12 flex-1 items-center justify-center gap-3 rounded-xl bg-[#f2ca50] px-8 text-sm font-semibold tracking-[0.05em] text-[#3c2f00] transition hover:bg-[#ffd95c]">
+              Lanjut
+              <ArrowRight className="h-4 w-4" />
             </button>
           )}
         </div>
