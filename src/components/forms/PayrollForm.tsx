@@ -514,6 +514,10 @@ export function PayrollForm() {
           {ownershipStatus === 'ORANG LAIN' ? (
             <StepCard title="Unggah Dokumen" icon={<CloudUpload className="h-5 w-5 text-[#f2ca50]" />}>
               <PowerOfAttorneyUploadField register={register} watch={watch} required error={errors.powerOfAttorneyFile?.message} />
+              <a href={powerOfAttorneyTemplateUrl} download className="inline-flex h-12 items-center justify-center gap-2 rounded-xl border border-[#f2ca50]/30 px-4 text-sm font-semibold text-[#f2ca50] transition hover:border-[#f2ca50] hover:bg-[#f2ca50]/10 md:col-span-2">
+                <Download className="h-4 w-4" />
+                Unduh Template Surat Kuasa
+              </a>
             </StepCard>
           ) : null}
         </div>
