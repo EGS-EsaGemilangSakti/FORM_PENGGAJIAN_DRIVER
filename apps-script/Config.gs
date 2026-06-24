@@ -12,7 +12,7 @@ const SIM_FOLDER_ID = SCRIPT_PROPERTIES.getProperty('SIM_FOLDER_ID') || DEFAULT_
 const SURAT_KUASA_FOLDER_ID = SCRIPT_PROPERTIES.getProperty('SURAT_KUASA_FOLDER_ID') || DEFAULT_SURAT_KUASA_FOLDER_ID;
 const KARTU_KELUARGA_FOLDER_ID = SCRIPT_PROPERTIES.getProperty('KARTU_KELUARGA_FOLDER_ID') || DEFAULT_KARTU_KELUARGA_FOLDER_ID;
 const QR_FOLDER_ID = SCRIPT_PROPERTIES.getProperty('QR_FOLDER_ID') || '';
-const DEFAULT_ALLOWED_ORIGINS = 'http://localhost:5173,https://egs-esagemilangsakti.github.io,https://form.ptesagemilangsakti.com';
+const DEFAULT_ALLOWED_ORIGINS = 'http://localhost:5173,https://form.cargo.jawabarat.ptesagemilangsakti.com';
 const ALLOWED_ORIGINS = (SCRIPT_PROPERTIES.getProperty('ALLOWED_ORIGINS') || DEFAULT_ALLOWED_ORIGINS).split(',').map(function (origin) {
   return origin.trim();
 }).filter(String);

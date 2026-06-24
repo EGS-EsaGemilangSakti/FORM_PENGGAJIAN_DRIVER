@@ -39,7 +39,7 @@ KTP_FOLDER_ID=1WPADF768tMItpMI8AnD7egbuahWi8gYh
 SIM_FOLDER_ID=1INjA847wVYT7UQSqbRbw9qsyPVhn1PV8
 SURAT_KUASA_FOLDER_ID=1ne_SkRGK4wTezLTI31Zd72X6qfabsZCx
 KARTU_KELUARGA_FOLDER_ID=1Go22NaHARwp1QfiXGFgWkuCQO94Cfe61
-ALLOWED_ORIGINS=http://localhost:5173,https://egs-esagemilangsakti.github.io
+ALLOWED_ORIGINS=http://localhost:5173,https://form.cargo.jawabarat.ptesagemilangsakti.com
 ```
 
 `API_CO_ID_KEY` diisi di Script Properties Google Apps Script. Jangan isi API key di React, `.env` frontend, atau hardcode di file `.gs`. Gunakan origin final GitHub Pages yang benar untuk production.
@@ -83,13 +83,19 @@ npm run build
 2. Di repository GitHub, buka Settings -> Pages.
 3. Pada Build and deployment, pilih Source: GitHub Actions.
 4. Workflow `.github/workflows/deploy-pages.yml` akan menjalankan `npm ci` dan `npm run build`.
-5. Setelah deploy selesai, salin URL GitHub Pages, contoh `https://username.github.io/nama-repo`.
-6. Masukkan origin GitHub Pages ke Script Properties `ALLOWED_ORIGINS`.
+5. Setelah deploy selesai, buka repository Settings -> Pages -> Custom domain.
+6. Isi custom domain:
+   `form.cargo.jawabarat.ptesagemilangsakti.com`
+7. Di DNS provider domain `ptesagemilangsakti.com`, buat record:
+   - Type: `CNAME`
+   - Name/Host: `form.cargo.jawabarat`
+   - Value/Target: `EGS-EsaGemilangSakti.github.io`
+8. Masukkan origin custom domain ke Script Properties `ALLOWED_ORIGINS`.
 
 Contoh `ALLOWED_ORIGINS` setelah GitHub Pages aktif:
 
 ```text
-http://localhost:5173,https://egs-esagemilangsakti.github.io
+http://localhost:5173,https://form.cargo.jawabarat.ptesagemilangsakti.com
 ```
 
 Jika GitHub Pages memakai path repository seperti `https://username.github.io/form-penggajian/`, origin yang dimasukkan tetap hanya:
