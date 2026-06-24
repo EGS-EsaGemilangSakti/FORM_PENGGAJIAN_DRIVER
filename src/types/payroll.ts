@@ -1,5 +1,5 @@
-export type EmploymentStatus = 'Freelance' | 'Kontrak';
-export type Position = 'DW REQUEST' | 'DW BULANAN' | 'REGULER';
+export type EmploymentStatus = 'FREELANCE' | 'REGULER';
+export type Position = 'DRIVER SIM B1/B2 UMUM';
 export type OwnershipStatus = 'PRIBADI' | 'ORANG LAIN';
 export type AccountValidationStatus = 'UNVALIDATED' | 'VALID' | 'INVALID';
 export type Gender = 'Laki-laki' | 'Perempuan';
@@ -62,6 +62,7 @@ export interface PayrollFormValues {
   accountValidation: AccountValidationResult;
   ownershipStatus: OwnershipStatus | '';
   ktpFile: FileList;
+  simFile: FileList;
   familyCardFile: FileList;
   powerOfAttorneyFile?: FileList;
   dataAgreement: boolean;
@@ -73,11 +74,12 @@ export interface PayrollSubmitPayload {
   origin: string;
   submittedAt: string;
   website: string;
-  data: Omit<PayrollFormValues, 'ktpFile' | 'familyCardFile' | 'powerOfAttorneyFile' | 'dataAgreement' | 'bankCode' | 'bankName'> & {
+  data: Omit<PayrollFormValues, 'ktpFile' | 'simFile' | 'familyCardFile' | 'powerOfAttorneyFile' | 'dataAgreement' | 'bankCode' | 'bankName'> & {
     bank: BankOption;
   };
   files: {
     ktp: UploadPayload;
+    sim: UploadPayload;
     familyCard: UploadPayload;
     powerOfAttorney: UploadPayload | null;
   };
@@ -91,6 +93,7 @@ export interface ApiResponse {
   qrCodeUrl?: string;
   qrCodeImageUrl?: string;
   qrCodeDownloadUrl?: string;
+  qrCodeDataUrl?: string;
 }
 
 export interface BankValidationRequest {

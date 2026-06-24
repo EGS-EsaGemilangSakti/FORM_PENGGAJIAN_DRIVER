@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { BANKS } from '../constants/banks';
 import { EMPLOYMENT_STATUSES, GENDERS, MARITAL_STATUSES, OWNERSHIP_STATUSES, PLACEMENTS, POSITIONS, PTKP_OPTIONS, RELIGIONS } from '../constants/placements';
-import { FAMILY_CARD_MIME_TYPES, KTP_MIME_TYPES, MAX_FILE_SIZE, POWER_OF_ATTORNEY_MIME_TYPES } from '../utils/validators';
+import { FAMILY_CARD_MIME_TYPES, KTP_MIME_TYPES, MAX_FILE_SIZE, POWER_OF_ATTORNEY_MIME_TYPES, SIM_MIME_TYPES } from '../utils/validators';
 
 const fileListSchema = z.custom<FileList>((value) => value instanceof FileList && value.length > 0, {
   message: 'File wajib diunggah',
@@ -54,6 +54,7 @@ export const payrollSchema = z
     }),
     ownershipStatus: z.enum(OWNERSHIP_STATUSES, { message: 'Status kepemilikan rekening wajib dipilih' }),
     ktpFile: fileListSchema.refine((fileList) => validateFile(fileList, KTP_MIME_TYPES), 'KTP wajib pdf, jpg, jpeg, atau png maksimal 5MB'),
+    simFile: fileListSchema.refine((fileList) => validateFile(fileList, SIM_MIME_TYPES), 'SIM wajib pdf, jpg, jpeg, atau png maksimal 5MB'),
     familyCardFile: fileListSchema.refine((fileList) => validateFile(fileList, FAMILY_CARD_MIME_TYPES), 'Kartu Keluarga wajib pdf, jpg, jpeg, atau png maksimal 5MB'),
     powerOfAttorneyFile: z.custom<FileList>().optional(),
     dataAgreement: z.literal(true, { errorMap: () => ({ message: 'Pernyataan wajib disetujui' }) }),

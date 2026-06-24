@@ -2,7 +2,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { ArrowLeft, ArrowRight, BarChart3, BriefcaseBusiness, Check, CloudUpload, Download, Info, Loader2, MapPin, Send, ShieldCheck, WalletCards } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useForm, type FieldErrors } from 'react-hook-form';
+import { useForm, type DefaultValues, type FieldErrors } from 'react-hook-form';
 import toast from 'react-hot-toast';
 import { BANKS } from '../../constants/banks';
 import { PTKP_OPTIONS } from '../../constants/placements';
@@ -37,6 +37,7 @@ import { PositionField } from '../fields/PositionField';
 import { PowerOfAttorneyUploadField } from '../fields/PowerOfAttorneyUploadField';
 import { PtkpField } from '../fields/PtkpField';
 import { ReligionField } from '../fields/ReligionField';
+import { SimUploadField } from '../fields/SimUploadField';
 
 const defaultValidation = {
   status: 'UNVALIDATED' as const,
@@ -87,10 +88,10 @@ const stepFields = {
     'ownershipStatus',
     'powerOfAttorneyFile',
   ],
-  3: ['ktpFile', 'familyCardFile', 'dataAgreement'],
+  3: ['ktpFile', 'simFile', 'familyCardFile', 'dataAgreement'],
 } as const;
 
-type PersistedPayrollValues = Partial<Omit<PayrollFormValues, 'ktpFile' | 'familyCardFile' | 'powerOfAttorneyFile'>>;
+type PersistedPayrollValues = Partial<Omit<PayrollFormValues, 'ktpFile' | 'simFile' | 'familyCardFile' | 'powerOfAttorneyFile'>>;
 
 interface PersistedDraft {
   currentStep?: 1 | 2 | 3;
@@ -117,6 +118,7 @@ function savePersistedDraft(currentStep: number, values: unknown) {
   if (typeof window === 'undefined') return;
   const persistableValues = { ...(values as Record<string, unknown>) };
   delete persistableValues.ktpFile;
+  delete persistableValues.simFile;
   delete persistableValues.familyCardFile;
   delete persistableValues.powerOfAttorneyFile;
   window.localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify({ currentStep, values: persistableValues }));
@@ -287,15 +289,18 @@ function ValidationErrorModal({ messages, onClose }: { messages: string[]; onClo
 }
 
 function RegistrationSuccessModal({ result, onClose }: { result: ApiResponse; onClose: () => void }) {
+  const qrImageSource = result.qrCodeDataUrl || result.qrCodeImageUrl;
+  const qrDownloadSource = result.qrCodeDataUrl || result.qrCodeDownloadUrl;
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#0f0f0f]/80 px-5 backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="registration-success-title">
       <div className="w-full max-w-md rounded-xl border border-[#f2ca50]/25 bg-[#201f1f] p-6 text-center shadow-[0_32px_64px_-12px_rgba(0,0,0,0.55)]">
         <h2 id="registration-success-title" className="text-xl font-semibold text-white">Registrasi berhasil</h2>
         <p className="mt-2 text-sm text-[#c9c5c2]">Simpan QR code ini untuk proses absensi.</p>
-        {result.qrCodeImageUrl ? <img src={result.qrCodeImageUrl} alt={`QR code ID ${result.submissionId}`} className="mx-auto mt-5 h-56 w-56 rounded-lg bg-white p-2" /> : null}
+        {qrImageSource ? <img src={qrImageSource} alt={`QR code ID ${result.submissionId}`} className="mx-auto mt-5 h-56 w-56 rounded-lg bg-white p-2" /> : null}
         <p className="mt-4 break-all font-mono text-xs text-[#e5e2e1]">ID: {result.submissionId}</p>
-        {result.qrCodeDownloadUrl ? (
-          <a href={result.qrCodeDownloadUrl} target="_blank" rel="noreferrer" className="mt-5 inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#f2ca50] px-5 text-sm font-bold text-[#3c2f00] transition hover:bg-[#ffd95c]">
+        {qrDownloadSource ? (
+          <a href={qrDownloadSource} download={`${result.submissionId || 'karyawan'}-qr.png`} className="mt-5 inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#f2ca50] px-5 text-sm font-bold text-[#3c2f00] transition hover:bg-[#ffd95c]">
             <Download className="h-4 w-4" /> Simpan QR Code
           </a>
         ) : null}
@@ -303,6 +308,47 @@ function RegistrationSuccessModal({ result, onClose }: { result: ApiResponse; on
       </div>
     </div>
   );
+}
+
+function createEmptyFormDefaults(): DefaultValues<PayrollFormValues> {
+  return {
+    email: '',
+    fullName: '',
+    address: '',
+    addressDetail: '',
+    provinceCode: '',
+    provinceName: '',
+    regencyCode: '',
+    regencyName: '',
+    districtCode: '',
+    districtName: '',
+    villageCode: '',
+    villageName: '',
+    postalCode: '',
+    nik: '',
+    birthPlaceCode: '',
+    birthPlace: '',
+    birthPlaceProvince: '',
+    birthDate: '',
+    gender: '',
+    maritalStatus: '',
+    religion: '',
+    ptkp: '',
+    phone: '',
+    placement: '',
+    employmentStatus: '',
+    position: '',
+    firstWorkDate: '',
+    bankCode: '',
+    bankName: '',
+    accountNumber: '',
+    accountOwner: '',
+    accountValidation: defaultValidation,
+    ownershipStatus: '',
+    dataAgreement: false,
+    website: '',
+    formStartedAt: nowIso(),
+  };
 }
 
 export function PayrollForm() {
@@ -447,9 +493,10 @@ export function PayrollForm() {
     submitLock.current = true;
     try {
       const ktp = values.ktpFile.item(0);
+      const sim = values.simFile.item(0);
       const familyCard = values.familyCardFile.item(0);
       const powerOfAttorney = values.powerOfAttorneyFile?.item(0) ?? null;
-      if (!ktp || !familyCard || !selectedBank) throw new Error('Data belum lengkap');
+      if (!ktp || !sim || !familyCard || !selectedBank) throw new Error('Data belum lengkap');
       const payload = {
         origin: window.location.origin,
         submittedAt: nowIso(),
@@ -491,18 +538,18 @@ export function PayrollForm() {
         },
         files: {
           ktp: await fileToBase64Payload(ktp),
+          sim: await fileToBase64Payload(sim),
           familyCard: await fileToBase64Payload(familyCard),
           powerOfAttorney: powerOfAttorney ? await fileToBase64Payload(powerOfAttorney) : null,
         },
       };
       const response = await submitMutation.mutateAsync(payload);
       if (!response.success) throw new Error(response.message);
-      if (!response.submissionId || !response.qrCodeImageUrl || !response.qrCodeDownloadUrl) throw new Error('QR code tidak tersedia pada respons server');
       setRegistrationResult(response);
       toast.success(`${response.message}: ${response.submissionId}`);
       skipDraftPersistRef.current = true;
-      reset();
-      setValue('formStartedAt', nowIso());
+      clearPersistedDraft();
+      reset(createEmptyFormDefaults());
       setCurrentStep(1);
       window.setTimeout(() => {
         clearPersistedDraft();
@@ -603,6 +650,7 @@ export function PayrollForm() {
         <div className="space-y-6">
           <StepCard title="Unggah Dokumen" icon={<CloudUpload className="h-5 w-5 text-[#f2ca50]" />}>
             <KtpUploadField register={register} watch={watch} error={errors.ktpFile?.message} />
+            <SimUploadField register={register} watch={watch} error={errors.simFile?.message} />
             <FamilyCardUploadField register={register} watch={watch} error={errors.familyCardFile?.message} />
           </StepCard>
 

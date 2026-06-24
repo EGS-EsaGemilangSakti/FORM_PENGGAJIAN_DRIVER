@@ -30,6 +30,7 @@ const HEADERS = [
   'Validation Timestamp',
   'Status Kepemilikan Rekening',
   'KTP URL',
+  'SIM URL',
   'Kartu Keluarga URL',
   'Surat Kuasa URL',
   'QR Payload',
@@ -70,9 +71,22 @@ const ALLOWED_FIELDS = [
   'formStartedAt',
   'bank'
 ];
-const PLACEMENTS = ['FASTOCK GUDANG A', 'FASTOCK GUDANG O', 'FASTOCK TAMBUN', 'FASTOCK KAMAL'];
-const EMPLOYMENT_STATUSES = ['Freelance', 'Kontrak'];
-const POSITIONS = ['DW REQUEST', 'DW BULANAN', 'REGULER'];
+const PLACEMENTS = [
+  'DRIVER JNT TGR',
+  'DRIVER JNT PKU',
+  'DRIVER JNT BTN',
+  'DRIVER JNT JRT SUNTER',
+  'DRIVER CARGO SUKABUMI',
+  'DRIVER CARGO BANDUNG',
+  'DRIVER VIP',
+  'DRIVER FASTRANS',
+  'DRIVER CARGO CIANJUR',
+  'DRIVER APL JURUMUDI',
+  'DRIVER APL SEMARANG',
+  'DRIVER APL BANDUNG'
+];
+const EMPLOYMENT_STATUSES = ['FREELANCE', 'REGULER'];
+const POSITIONS = ['DRIVER SIM B1/B2 UMUM'];
 const OWNERSHIP_STATUSES = ['PRIBADI', 'ORANG LAIN'];
 const GENDERS = ['Laki-laki', 'Perempuan'];
 const MARITAL_STATUSES = ['Menikah', 'Belum Menikah', 'Cerai Hidup', 'Cerai Mati'];
@@ -160,6 +174,7 @@ function handleSubmitPayroll(payload) {
   }
   const qrCode = generateQrCode(submissionId);
   const ktpFile = uploadToDrive(payload.files && payload.files.ktp, 'ktp', submissionId);
+  const simFile = uploadToDrive(payload.files && payload.files.sim, 'sim', submissionId);
   const kartuKeluargaFile = uploadToDrive(payload.files && payload.files.familyCard, 'kartuKeluarga', submissionId);
   var suratKuasaFile = { url: '' };
 
@@ -167,7 +182,7 @@ function handleSubmitPayroll(payload) {
     suratKuasaFile = uploadToDrive(payload.files.powerOfAttorney, 'suratKuasa', submissionId);
   }
 
-  saveToSpreadsheet(submissionId, data, backendValidation, ktpFile.url, kartuKeluargaFile.url, suratKuasaFile.url, qrCode);
+  saveToSpreadsheet(submissionId, data, backendValidation, ktpFile.url, simFile.url, kartuKeluargaFile.url, suratKuasaFile.url, qrCode);
   logSubmission('SUCCESS', submissionId, 'Data berhasil disimpan');
 
   return {
@@ -177,6 +192,7 @@ function handleSubmitPayroll(payload) {
     qrCodeUrl: qrCode.url,
     qrCodeImageUrl: qrCode.imageUrl,
     qrCodeDownloadUrl: qrCode.downloadUrl,
+    qrCodeDataUrl: qrCode.dataUrl,
     message: 'Data berhasil disimpan'
   };
 }
@@ -371,21 +387,22 @@ function generateQrCode(submissionId) {
 
   const file = getQrFolder().createFile(blob);
   file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+  const resourceKey = file.getResourceKey();
+  const resourceKeyQuery = resourceKey ? '&resourcekey=' + encodeURIComponent(resourceKey) : '';
 
   return {
     payload: payload,
     url: file.getUrl(),
-    imageUrl: 'https://drive.google.com/uc?export=view&id=' + file.getId(),
-    downloadUrl: 'https://drive.google.com/uc?export=download&id=' + file.getId()
+    imageUrl: 'https://drive.google.com/uc?export=view&id=' + file.getId() + resourceKeyQuery,
+    downloadUrl: 'https://drive.google.com/uc?export=download&id=' + file.getId() + resourceKeyQuery,
+    dataUrl: 'data:image/png;base64,' + Utilities.base64Encode(blob.getBytes())
   };
 }
 
 function getQrFolder() {
   if (QR_FOLDER_ID) return DriveApp.getFolderById(QR_FOLDER_ID);
 
-  const parentFolders = DriveApp.getFolderById(KTP_FOLDER_ID).getParents();
-  if (!parentFolders.hasNext()) throw new Error('Folder induk QR code tidak ditemukan');
-  const parent = parentFolders.next();
+  const parent = DriveApp.getFolderById(ROOT_FOLDER_ID);
   const existingFolders = parent.getFoldersByName('QR_CODES');
   return existingFolders.hasNext() ? existingFolders.next() : parent.createFolder('QR_CODES');
 }
@@ -417,7 +434,13 @@ function uploadToDrive(filePayload, type, submissionId) {
   if (bytes.length > MAX_FILE_SIZE) throw new Error('Ukuran file melebihi 5MB');
 
   const extension = getExtension(filePayload.mimeType);
-  const folderId = type === 'ktp' ? KTP_FOLDER_ID : type === 'kartuKeluarga' ? KARTU_KELUARGA_FOLDER_ID : SURAT_KUASA_FOLDER_ID;
+  const folderId = type === 'ktp'
+    ? KTP_FOLDER_ID
+    : type === 'sim'
+      ? SIM_FOLDER_ID
+      : type === 'kartuKeluarga'
+        ? KARTU_KELUARGA_FOLDER_ID
+        : SURAT_KUASA_FOLDER_ID;
   const fileName = submissionId + '-' + type + extension;
   const blob = Utilities.newBlob(bytes, filePayload.mimeType, fileName);
   const createdFile = DriveApp.getFolderById(folderId).createFile(blob);
@@ -428,8 +451,8 @@ function uploadToDrive(filePayload, type, submissionId) {
   };
 }
 
-function saveToSpreadsheet(submissionId, data, validation, ktpUrl, kartuKeluargaUrl, suratKuasaUrl, qrCode) {
-  const row = buildSubmissionRow(submissionId, data, validation, ktpUrl, kartuKeluargaUrl, suratKuasaUrl, qrCode);
+function saveToSpreadsheet(submissionId, data, validation, ktpUrl, simUrl, kartuKeluargaUrl, suratKuasaUrl, qrCode) {
+  const row = buildSubmissionRow(submissionId, data, validation, ktpUrl, simUrl, kartuKeluargaUrl, suratKuasaUrl, qrCode);
   const mainSheet = getSheet(SHEET_NAME);
   createSpreadsheetHeaders();
   mainSheet.appendRow(row);
@@ -446,7 +469,7 @@ function saveToSpreadsheet(submissionId, data, validation, ktpUrl, kartuKeluarga
   applyDuplicateNikFormattingToSheet(positionPlacementSheet);
 }
 
-function buildSubmissionRow(submissionId, data, validation, ktpUrl, kartuKeluargaUrl, suratKuasaUrl, qrCode) {
+function buildSubmissionRow(submissionId, data, validation, ktpUrl, simUrl, kartuKeluargaUrl, suratKuasaUrl, qrCode) {
   return [
     submissionId,
     new Date(),
@@ -475,6 +498,7 @@ function buildSubmissionRow(submissionId, data, validation, ktpUrl, kartuKeluarg
     validation.validationTimestamp,
     data.ownershipStatus,
     ktpUrl,
+    simUrl,
     kartuKeluargaUrl,
     suratKuasaUrl,
     qrCode.payload,

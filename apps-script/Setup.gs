@@ -5,11 +5,13 @@ function setup() {
   syncPlacementSheetsFromMain();
   syncPositionPlacementSheetsFromMain();
   applyDuplicateNikFormattingToPayrollSheets();
+  DriveApp.getFolderById(ROOT_FOLDER_ID);
   DriveApp.getFolderById(KTP_FOLDER_ID);
+  DriveApp.getFolderById(SIM_FOLDER_ID);
   DriveApp.getFolderById(SURAT_KUASA_FOLDER_ID);
   DriveApp.getFolderById(KARTU_KELUARGA_FOLDER_ID);
   getQrFolder();
-  console.log('Setup berhasil: header spreadsheet, sinkronisasi sheet penempatan dan posisi penempatan, format duplikat NIK, serta folder Drive dan QR valid.');
+  console.log('Setup berhasil: header spreadsheet, sinkronisasi sheet penempatan dan posisi penempatan, format duplikat NIK, serta folder Drive, SIM, dan QR valid.');
 }
 
 function createPlacementSheets() {
