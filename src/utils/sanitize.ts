@@ -23,6 +23,10 @@ export function sanitizeUpper(value: unknown): string {
   return sanitizeText(value).toUpperCase();
 }
 
+export function sanitizeUpperInput(value: unknown): string {
+  return sanitizeTextInput(value).toUpperCase();
+}
+
 export function digitsOnly(value: unknown): string {
   return String(value ?? '').replace(/\D/g, '');
 }

@@ -15,7 +15,7 @@ function validateFile(fileList: FileList, mimeTypes: string[]): boolean {
 export const payrollSchema = z
   .object({
     email: z.string().trim().email('Email tidak valid'),
-    fullName: z.string().trim().min(1, 'Nama wajib diisi').regex(/^[A-Z ]+$/, 'Nama hanya boleh huruf kapital dan spasi'),
+    fullName: z.string().trim().min(1, 'Nama wajib diisi').regex(/^[A-Z .]+$/, 'Nama hanya boleh huruf kapital, titik, dan spasi'),
     address: z.string().trim().min(10, 'Alamat minimal 10 karakter').max(500, 'Alamat maksimal 500 karakter'),
     addressDetail: z.string().trim().min(5, 'Detail alamat minimal 5 karakter').max(200, 'Detail alamat maksimal 200 karakter'),
     provinceCode: z.string().regex(/^\d{2}$/, 'Provinsi wajib dipilih'),
@@ -44,7 +44,7 @@ export const payrollSchema = z
     bankCode: z.string().refine((code) => BANKS.some((bank) => bank.bank_code === code), 'Bank wajib dipilih'),
     bankName: z.string().min(1, 'Bank wajib dipilih'),
     accountNumber: z.string().regex(/^\d{5,30}$/, 'Nomor rekening wajib 5-30 digit angka'),
-    accountOwner: z.string().trim().min(1, 'Nama pemilik rekening wajib diisi').regex(/^[A-Z ]+$/, 'Nama pemilik rekening hanya boleh huruf kapital dan spasi'),
+    accountOwner: z.string().trim().min(1, 'Nama pemilik rekening wajib diisi').regex(/^[A-Z .]+$/, 'Nama pemilik rekening hanya boleh huruf kapital, titik, dan spasi'),
     accountValidation: z.object({
       status: z.enum(['UNVALIDATED', 'VALID', 'INVALID']),
       score: z.number().nullable(),
@@ -64,6 +64,9 @@ export const payrollSchema = z
   .superRefine((data, ctx) => {
     if (data.accountValidation.status !== 'VALID') {
       ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['accountValidation'], message: 'Rekening wajib divalidasi dan valid' });
+    }
+    if ((data.accountValidation.score ?? 0) < 9) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['accountValidation'], message: 'Score validasi rekening minimal 9' });
     }
     const fileList = data.powerOfAttorneyFile;
     const hasFile = fileList instanceof FileList && fileList.length > 0;

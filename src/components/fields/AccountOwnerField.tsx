@@ -1,6 +1,6 @@
 import type { UseFormRegister, UseFormSetValue } from 'react-hook-form';
 import type { PayrollFormValues } from '../../types/payroll';
-import { sanitizeUpper } from '../../utils/sanitize';
+import { sanitizeUpperInput } from '../../utils/sanitize';
 import { FieldShell, inputClass } from './FieldShell';
 
 export function AccountOwnerField({ register, setValue, error, onChanged }: { register: UseFormRegister<PayrollFormValues>; setValue: UseFormSetValue<PayrollFormValues>; error?: string; onChanged: () => void }) {
@@ -10,7 +10,7 @@ export function AccountOwnerField({ register, setValue, error, onChanged }: { re
         className={inputClass}
         {...register('accountOwner')}
         onChange={(event) => {
-          setValue('accountOwner', sanitizeUpper(event.target.value), { shouldValidate: true });
+          setValue('accountOwner', sanitizeUpperInput(event.target.value), { shouldValidate: true });
           onChanged();
         }}
       />
