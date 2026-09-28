@@ -65,8 +65,8 @@ export const payrollSchema = z
     if (data.accountValidation.status !== 'VALID') {
       ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['accountValidation'], message: 'Rekening wajib divalidasi dan valid' });
     }
-    if ((data.accountValidation.score ?? 0) < 9) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['accountValidation'], message: 'Score validasi rekening minimal 9' });
+    if ((data.accountValidation.score ?? 0) < 7) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['accountValidation'], message: 'Score validasi rekening minimal 7' });
     }
     const fileList = data.powerOfAttorneyFile;
     const hasFile = fileList instanceof FileList && fileList.length > 0;
