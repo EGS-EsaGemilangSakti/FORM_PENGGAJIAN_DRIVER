@@ -11,6 +11,7 @@ export const PLACEMENTS = [
   'DRIVER APL JURUMUDI',
   'DRIVER APL SEMARANG',
   'DRIVER APL BANDUNG',
+  'WAHANA',
 ] as const;
 
 export const EMPLOYMENT_STATUSES = ['FREELANCE', 'REGULER'] as const;
